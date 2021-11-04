@@ -1341,15 +1341,17 @@ func Test_sqlmock_Query(t *testing.T) {
 	}
 }
 
+
 func TestUnexpectedQueryWithoutCheckingReturnError (t *testing.T) {
-	// db, mock, err := New()
-	// if err != nil {
-	// 	t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
-	// }
-	// defer db.Close()
+	db, mock, err := New()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
 
-	// _ = mock
+	_ = mock
 	// mock.FailAndReturnError(t)
+	// After uncomment "mock.FailAndReturnError(t)", test will fail which is expected, however it is not possible to hanlde that in standtard go testing library.
 
-	// _, err = db.Exec("UPDATE products SET value = 1 WHERE id = 2")
+	_, err = db.Exec("UPDATE products SET value = 1 WHERE id = 2")
 }
