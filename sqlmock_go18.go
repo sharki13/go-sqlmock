@@ -136,7 +136,11 @@ func (c *sqlmock) ping() (*ExpectedPing, error) {
 
 		next.Unlock()
 		if c.ordered {
-			return nil, fmt.Errorf("call to database Ping, was not expected, next expectation is: %s", next)
+			err := fmt.Errorf("call to database Ping, was not expected, next expectation is: %s", next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return nil, err
 		}
 	}
 
@@ -145,7 +149,11 @@ func (c *sqlmock) ping() (*ExpectedPing, error) {
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
 		}
-		return nil, fmt.Errorf(msg)
+		err := fmt.Errorf(msg)
+		if c.t != nil {
+			c.t.Errorf(err.Error())
+		}
+		return nil, err
 	}
 
 	expected.triggered = true
@@ -212,7 +220,11 @@ func (c *sqlmock) query(query string, args []driver.NamedValue) (*ExpectedQuery,
 				break
 			}
 			next.Unlock()
-			return nil, fmt.Errorf("call to Query '%s' with args %+v, was not expected, next expectation is: %s", query, args, next)
+			err := fmt.Errorf("call to Query '%s' with args %+v, was not expected, next expectation is: %s", query, args, next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return nil, err
 		}
 		if qr, ok := next.(*ExpectedQuery); ok {
 			if err := c.queryMatcher.Match(qr.expectSQL, query); err != nil {
@@ -232,16 +244,26 @@ func (c *sqlmock) query(query string, args []driver.NamedValue) (*ExpectedQuery,
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
 		}
-		return nil, fmt.Errorf(msg, query, args)
+		err := fmt.Errorf(msg, query, args)
+		if c.t != nil {
+			c.t.Errorf(err.Error())
+		}
+		return nil, err
 	}
 
 	defer expected.Unlock()
 
 	if err := c.queryMatcher.Match(expected.expectSQL, query); err != nil {
+		if c.t != nil {
+			c.t.Errorf("Query: %v", err)
+		}
 		return nil, fmt.Errorf("Query: %v", err)
 	}
 
 	if err := expected.argsMatches(args); err != nil {
+		if c.t != nil {
+			c.t.Errorf("Query '%s', arguments do not match: %s", query, err)
+		}
 		return nil, fmt.Errorf("Query '%s', arguments do not match: %s", query, err)
 	}
 
@@ -251,7 +273,11 @@ func (c *sqlmock) query(query string, args []driver.NamedValue) (*ExpectedQuery,
 	}
 
 	if expected.rows == nil {
-		return nil, fmt.Errorf("Query '%s' with args %+v, must return a database/sql/driver.Rows, but it was not set for expectation %T as %+v", query, args, expected, expected)
+		err := fmt.Errorf("Query '%s' with args %+v, must return a database/sql/driver.Rows, but it was not set for expectation %T as %+v", query, args, expected, expected)
+		if c.t != nil {
+			c.t.Errorf("Query: %v", err)
+		}
+		return nil, err
 	}
 	return expected, nil
 }
@@ -295,7 +321,11 @@ func (c *sqlmock) exec(query string, args []driver.NamedValue) (*ExpectedExec, e
 				break
 			}
 			next.Unlock()
-			return nil, fmt.Errorf("call to ExecQuery '%s' with args %+v, was not expected, next expectation is: %s", query, args, next)
+			err := fmt.Errorf("call to ExecQuery '%s' with args %+v, was not expected, next expectation is: %s", query, args, next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return nil, err
 		}
 		if exec, ok := next.(*ExpectedExec); ok {
 			if err := c.queryMatcher.Match(exec.expectSQL, query); err != nil {
@@ -315,18 +345,27 @@ func (c *sqlmock) exec(query string, args []driver.NamedValue) (*ExpectedExec, e
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
 		}
+
+		err := fmt.Errorf(msg, query, args)
+
 		if c.t != nil {
-			c.t.Errorf(msg, query, args)
+			c.t.Errorf(err.Error())
 		}
-		return nil, fmt.Errorf(msg, query, args)
+		return nil, err
 	}
 	defer expected.Unlock()
 
 	if err := c.queryMatcher.Match(expected.expectSQL, query); err != nil {
+		if c.t != nil {
+			c.t.Errorf("ExecQuery: %v", err)
+		}
 		return nil, fmt.Errorf("ExecQuery: %v", err)
 	}
 
 	if err := expected.argsMatches(args); err != nil {
+		if c.t != nil {
+			c.t.Errorf("ExecQuery '%s', arguments do not match: %s", query, err)
+		}
 		return nil, fmt.Errorf("ExecQuery '%s', arguments do not match: %s", query, err)
 	}
 
@@ -336,7 +375,11 @@ func (c *sqlmock) exec(query string, args []driver.NamedValue) (*ExpectedExec, e
 	}
 
 	if expected.result == nil {
-		return nil, fmt.Errorf("ExecQuery '%s' with args %+v, must return a database/sql/driver.Result, but it was not set for expectation %T as %+v", query, args, expected, expected)
+		err := fmt.Errorf("ExecQuery '%s' with args %+v, must return a database/sql/driver.Result, but it was not set for expectation %T as %+v", query, args, expected, expected)
+		if c.t != nil {
+			c.t.Errorf("Query: %v", err)
+		}
+		return nil, err
 	}
 
 	return expected, nil
