@@ -14,6 +14,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"testing"
 	"time"
 )
 
@@ -84,6 +85,8 @@ type SqlmockCommon interface {
 	// sql driver.Value slice or from the CSV string and
 	// to be used as sql driver.Rows.
 	NewRows(columns []string) *Rows
+
+	SetT(t *testing.T)
 }
 
 type sqlmock struct {
@@ -94,6 +97,7 @@ type sqlmock struct {
 	converter    driver.ValueConverter
 	queryMatcher QueryMatcher
 	monitorPings bool
+	t			 *testing.T
 
 	expected []expectation
 }
@@ -436,4 +440,8 @@ func (c *sqlmock) NewRows(columns []string) *Rows {
 	r := NewRows(columns)
 	r.converter = c.converter
 	return r
+}
+
+func (c *sqlmock) SetT(t *testing.T) {
+	c.t = t
 }

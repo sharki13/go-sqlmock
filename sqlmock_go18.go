@@ -315,6 +315,9 @@ func (c *sqlmock) exec(query string, args []driver.NamedValue) (*ExpectedExec, e
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
 		}
+		if c.t != nil {
+			c.t.Errorf(msg, query, args)
+		}
 		return nil, fmt.Errorf(msg, query, args)
 	}
 	defer expected.Unlock()
