@@ -26,9 +26,13 @@ interface, which was not required or useful for mocking and was removed. Hope it
 I do not have much spare time for this library and willing to transfer the repository ownership
 to person or an organization motivated to maintain it. Open up a conversation if you are interested. See #230.
 
-## Install
+## Install original library
 
     go get github.com/DATA-DOG/go-sqlmock
+
+## Install forked library
+
+    go get github.com/sharki13/go-sqlmock
 
 ## Documentation and Examples
 
@@ -216,12 +220,36 @@ func TestAnyTimeArgument(t *testing.T) {
 
 It only asserts that argument is of `time.Time` type.
 
+## Fail test case even when SUT is not handling sql driver errors properly (KEEP CALM AND CARRY ON)
+
+It might be the case when your legacy code is not checking errors from sql driver like this example bellow. System under test doesn't care about
+what was returned as error or just print that on console and carry on. In that case without modification of code which is your system under test,
+you are not able to prepare test cases. For that purpose pass t object to mock via FailAndReturnError method like in example bellow.
+This test case should fail, even without checking errors from DB.
+
+``` go 
+func TestUnexpectedQueryWithoutCheckingReturnError (t *testing.T) {
+	db, mock, err := New()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	mock.FailAndReturnError(t)
+
+	_, err := db.Exec("UPDATE products SET value = 1 WHERE id = 1")
+	if err != nil {
+		fmt.Printf("Error: Just print, let's continue :)")
+	}
+}
+```
+
 ## Run tests
 
     go test -race
 
 ## Change Log
-
+- **2021-11-04** - added optional method to pass pointer to testing.T.
 - **2019-04-06** - added functionality to mock a sql MetaData request
 - **2019-02-13** - added `go.mod` removed the references and suggestions using `gopkg.in`.
 - **2018-12-11** - added expectation of Rows to be closed, while mocking expected query.
