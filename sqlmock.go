@@ -86,7 +86,11 @@ type SqlmockCommon interface {
 	// to be used as sql driver.Rows.
 	NewRows(columns []string) *Rows
 
-	SetT(t *testing.T)
+	// FailAndReturnError allow to pass ptr to testing.T. 
+	// If this is set then test will be failed with ErrorF in case of
+	// unexpected calls or not matching expectations. It is usable in case
+	// when system under test is not checking properly errors from sql driver.
+	FailAndReturnError(t *testing.T)
 }
 
 type sqlmock struct {
@@ -171,7 +175,11 @@ func (c *sqlmock) Close() error {
 
 		next.Unlock()
 		if c.ordered {
-			return fmt.Errorf("call to database Close, was not expected, next expectation is: %s", next)
+			err := fmt.Errorf("call to database Close, was not expected, next expectation is: %s", next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return err
 		}
 	}
 
@@ -179,6 +187,9 @@ func (c *sqlmock) Close() error {
 		msg := "call to database Close was not expected"
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
+		}
+		if c.t != nil {
+			c.t.Errorf(msg)
 		}
 		return fmt.Errorf(msg)
 	}
@@ -246,13 +257,20 @@ func (c *sqlmock) begin() (*ExpectedBegin, error) {
 
 		next.Unlock()
 		if c.ordered {
-			return nil, fmt.Errorf("call to database transaction Begin, was not expected, next expectation is: %s", next)
+			err := fmt.Errorf("call to database transaction Begin, was not expected, next expectation is: %s", next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return nil, err
 		}
 	}
 	if expected == nil {
 		msg := "call to database transaction Begin was not expected"
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
+		}
+		if c.t != nil {
+			c.t.Errorf(msg)
 		}
 		return nil, fmt.Errorf(msg)
 	}
@@ -309,7 +327,11 @@ func (c *sqlmock) prepare(query string) (*ExpectedPrepare, error) {
 			}
 
 			next.Unlock()
-			return nil, fmt.Errorf("call to Prepare statement with query '%s', was not expected, next expectation is: %s", query, next)
+			err := fmt.Errorf("call to Prepare statement with query '%s', was not expected, next expectation is: %s", query, next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return nil, err
 		}
 
 		if pr, ok := next.(*ExpectedPrepare); ok {
@@ -326,7 +348,11 @@ func (c *sqlmock) prepare(query string) (*ExpectedPrepare, error) {
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
 		}
-		return nil, fmt.Errorf(msg, query)
+		err := fmt.Errorf(msg, query)
+		if c.t != nil {
+			c.t.Errorf(err.Error())
+		}
+		return nil, err
 	}
 	defer expected.Unlock()
 	if err := c.queryMatcher.Match(expected.expectSQL, query); err != nil {
@@ -382,13 +408,20 @@ func (c *sqlmock) Commit() error {
 
 		next.Unlock()
 		if c.ordered {
-			return fmt.Errorf("call to Commit transaction, was not expected, next expectation is: %s", next)
+			err := fmt.Errorf("call to Commit transaction, was not expected, next expectation is: %s", next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return err
 		}
 	}
 	if expected == nil {
 		msg := "call to Commit transaction was not expected"
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
+		}
+		if c.t != nil {
+			c.t.Errorf(msg)
 		}
 		return fmt.Errorf(msg)
 	}
@@ -417,13 +450,20 @@ func (c *sqlmock) Rollback() error {
 
 		next.Unlock()
 		if c.ordered {
-			return fmt.Errorf("call to Rollback transaction, was not expected, next expectation is: %s", next)
+			err := fmt.Errorf("call to Rollback transaction, was not expected, next expectation is: %s", next)
+			if c.t != nil {
+				c.t.Errorf(err.Error())
+			}
+			return err
 		}
 	}
 	if expected == nil {
 		msg := "call to Rollback transaction was not expected"
 		if fulfilled == len(c.expected) {
 			msg = "all expectations were already fulfilled, " + msg
+		}
+		if c.t != nil {
+			c.t.Errorf(msg)
 		}
 		return fmt.Errorf(msg)
 	}
@@ -442,6 +482,6 @@ func (c *sqlmock) NewRows(columns []string) *Rows {
 	return r
 }
 
-func (c *sqlmock) SetT(t *testing.T) {
+func (c *sqlmock) FailAndReturnError(t *testing.T) {
 	c.t = t
 }
