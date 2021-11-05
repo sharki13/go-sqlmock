@@ -227,20 +227,23 @@ what was returned as error or just print that on console and carry on. In that c
 you are not able to prepare test cases. For that purpose pass t object to mock via FailAndReturnError method like in example bellow.
 This test case should fail, even without checking errors from DB.
 
-``` go 
+``` go
+func LegacyCode_UpdateValueForId(*sql.DB db, id int, value int) {
+	_, err := db.Exec("UPDATE products SET value = $1 WHERE id = $2", id, value)
+	if err != nil {
+		fmt.Printf("Error: Just print, let's continue :)")
+	}
+}
+
 func TestUnexpectedQueryWithoutCheckingReturnError (t *testing.T) {
 	db, mock, err := New()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
-
 	mock.FailAndReturnError(t)
 
-	_, err := db.Exec("UPDATE products SET value = 1 WHERE id = 1")
-	if err != nil {
-		fmt.Printf("Error: Just print, let's continue :)")
-	}
+	LegacyCode_UpdateValueForId(1, 10)
 }
 ```
 

@@ -1341,17 +1341,91 @@ func Test_sqlmock_Query(t *testing.T) {
 	}
 }
 
-
-func TestUnexpectedQueryWithoutCheckingReturnError (t *testing.T) {
+func Test_sqlmock_UnexpectedExecWithoutCheckingReturnError (t *testing.T) {
 	db, mock, err := New()
 	if err != nil {
 		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	_ = mock
-	// mock.FailAndReturnError(t)
-	// After uncomment "mock.FailAndReturnError(t)", test will fail which is expected, however it is not possible to hanlde that in standtard go testing library.
+	var testing_T testing.T
+	mock.FailAndReturnError(&testing_T)
 
 	_, err = db.Exec("UPDATE products SET value = 1 WHERE id = 2")
+	if err != nil {
+		fmt.Printf("Error: Let's print error and cary on, err %s", err)
+	}
+
+	if false == testing_T.Failed() {
+		t.Error("test failure expected")
+	}
+}
+
+func Test_sqlmock_UnexpectedBeginWithoutCheckingReturnError (t *testing.T) {
+	db, mock, err := New()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	var testing_T testing.T
+	mock.FailAndReturnError(&testing_T)
+
+	_, err = db.Begin()
+	if err != nil {
+		fmt.Printf("Error: Let's print error and cary on, err %s", err)
+	}
+
+	if false == testing_T.Failed() {
+		t.Error("test failure expected")
+	}
+}
+
+func Test_sqlmock_UnexpectedCommitWithoutCheckingReturnError (t *testing.T) {
+	db, mock, err := New()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	var testing_T testing.T
+	mock.FailAndReturnError(&testing_T)
+
+	mock.ExpectBegin()
+
+	tx, err := db.Begin()
+	if err != nil {
+		fmt.Printf("Error: Let's print error and cary on, err %s\n", err)
+	}
+
+	if testing_T.Failed() {
+		t.Error("test failure is not expected")
+	}
+
+	tx.Commit()
+
+	if false == testing_T.Failed() {
+		t.Error("test failure expected")
+	}
+}
+
+
+func Test_sqlmock_UnexpectedQueryWithoutCheckingReturnError (t *testing.T) {
+	db, mock, err := New()
+	if err != nil {
+		t.Errorf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	var testing_T testing.T
+	mock.FailAndReturnError(&testing_T)
+
+	_, err = db.Query("SELECT name FROM products WHERE id = 1")
+	if err != nil {
+		fmt.Printf("Error: Let's print error and cary on, err %s", err)
+	}
+
+	if !testing_T.Failed() {
+		t.Error("test failure expected")
+	}
 }
